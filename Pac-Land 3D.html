@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D PAC-LAND - World Adventure Edition</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000814; 
+            font-family: 'Courier New', monospace; 
+            touch-action: none; 
+            user-select: none; 
+            -webkit-user-select: none; 
+        }
+        
+        #ui { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px;
+            right: 140px; 
+            color: #00f2ff; 
+            font-size: 13px; 
+            pointer-events: none; 
+            z-index: 10; 
+            font-weight: bold; 
+            text-shadow: 0 0 6px rgba(0, 242, 255, 0.9), 0 0 2px #000;
+        }
+
+        .hud-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: rgba(0, 10, 30, 0.65);
+            padding: 8px 14px;
+            border-radius: 12px;
+            border: 2px solid rgba(0, 242, 255, 0.4);
+            backdrop-filter: blur(4px);
+        }
+
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .hud-val {
+            color: #ffff00;
+            font-size: 15px;
+        }
+
+        #district-banner {
+            margin-top: 6px;
+            color: #ff9900;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px rgba(255, 153, 0, 0.8);
+        }
+
+        #minimap { 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            width: 125px; 
+            height: 125px; 
+            background: rgba(0, 10, 25, 0.85); 
+            border: 2px solid #00f2ff; 
+            border-radius: 12px;
+            z-index: 20; 
+            box-shadow: 0 0 12px rgba(0, 242, 255, 0.4);
+        }
+
+        #joystick-container { 
+            position: absolute; 
+            bottom: 30px; 
+            left: 30px; 
+            width: 110px; 
+            height: 110px; 
+            background: rgba(0, 242, 255, 0.15); 
+            border: 2px solid #00f2ff; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 30; 
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+        }
+
+        #joystick-knob { 
+            width: 45px; 
+            height: 45px; 
+            background: #00f2ff; 
+            border-radius: 50%; 
+            box-shadow: 0 0 12px #00f2ff; 
+        }
+
+        #controls-right { 
+            position: absolute; 
+            bottom: 30px; 
+            right: 30px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            align-items: flex-end; 
+            z-index: 30; 
+        }
+
+        .btn { 
+            width: 75px; 
+            height: 75px; 
+            background: rgba(0, 255, 100, 0.25); 
+            border: 2.5px solid #00ff66; 
+            border-radius: 50%; 
+            color: #00ff66; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            font-size: 15px; 
+            box-shadow: 0 0 15px rgba(0,255,102,0.4);
+            -webkit-tap-highlight-color: transparent; 
+            cursor: pointer;
+            text-shadow: 0 0 5px #00ff66;
+        }
+
+        #victory, #gameover { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 100; 
+            text-align: center; 
+            backdrop-filter: blur(8px);
+        }
+
+        #victory { background: rgba(10, 20, 0, 0.92); color: #ffff00; }
+        #gameover { background: rgba(30, 0, 0, 0.92); color: #ffffff; }
+
+        .modal-card {
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #ffff00;
+            border-radius: 16px;
+            padding: 30px 40px;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.4);
+            max-width: 90%;
+            width: 420px;
+        }
+
+        #gameover .modal-card {
+            border-color: #ff2244;
+            box-shadow: 0 0 25px rgba(255, 34, 68, 0.5);
+        }
+
+        .bar-container { 
+            display: none; 
+            width: 100%; 
+            max-width: 240px;
+            height: 12px; 
+            border: 2px solid #00ffff; 
+            border-radius: 6px; 
+            margin-top: 6px; 
+            overflow: hidden; 
+            background: rgba(0,0,0,0.8); 
+            box-shadow: 0 0 8px rgba(0,255,255,0.5);
+        }
+
+        #powerBar { width: 100%; height: 100%; background: #00ffff; transition: width 0.1s linear; }
+
+        .retry-btn { 
+            padding: 14px 32px; 
+            margin-top: 20px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 10px;
+            font-size: 18px; 
+            font-family: inherit;
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+            transition: transform 0.1s;
+        }
+
+        .retry-btn:active { transform: scale(0.95); }
+
+        #camera-hint { 
+            position: absolute; 
+            top: 145px; 
+            right: 10px; 
+            color: rgba(255,255,255,0.6); 
+            font-size: 11px; 
+            pointer-events: none; 
+            text-align: center; 
+            background: rgba(0,0,0,0.5);
+            padding: 5px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        #desktop-hint {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(0, 242, 255, 0.85);
+            font-size: 12px;
+            pointer-events: none;
+            background: rgba(0, 10, 30, 0.7);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            white-space: nowrap;
+        }
+
+        #toast-msg {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 230, 0, 0.95);
+            color: #000;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 50;
+            box-shadow: 0 0 20px rgba(255, 230, 0, 0.8);
+        }
+
+        @media (max-width: 600px) {
+            #desktop-hint { display: none; }
+            #camera-hint { font-size: 9px; width: 110px; }
+            #ui { font-size: 11px; right: 120px; }
+            .hud-val { font-size: 13px; }
+            #minimap { width: 100px; height: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div class="hud-row">
+            <div class="hud-item">POINTS: <span id="score" class="hud-val">000000</span></div>
+            <div class="hud-item">LIVES: <span id="lives" class="hud-val">3</span></div>
+            <div class="hud-item">FRUITS: <span id="fruits" class="hud-val">0</span></div>
+            <div class="hud-item">ITEMS: <span id="remaining" class="hud-val">0</span></div>
+        </div>
+        <div id="district-banner">📍 AREA: RESIDENTIAL SUBURBS</div>
+        <div id="powerBarContainer" class="bar-container"><div id="powerBar"></div></div>
+    </div>
+    
+    <canvas id="minimap"></canvas>
+    <div id="camera-hint">↕ Drag screen ↔<br>rotate 3D camera</div>
+    <div id="desktop-hint">Controls: WASD / Arrows (Move) | Spacebar (Jump) | Mouse Drag (Camera)</div>
+    <div id="toast-msg">CHECKPOINT REACHED!</div>
+
+    <div id="joystick-container"><div id="joystick-knob"></div></div>
+
+    <div id="controls-right">
+        <div id="btnJump" class="btn">JUMP</div>
+    </div>
+
+    <div id="victory">
+        <div class="modal-card">
+            <h1 style="color:#ffff00; margin-top:0; font-size:32px; text-shadow:0 0 10px #ffff00;">🎉 PAC-LAND CLEARED! 🎉</h1>
+            <p style="font-size:16px; line-height:1.5;">You successfully guided Pac-Man through all 6 districts of Pac-Land and reached the Fairyland Portal!</p>
+            <p style="font-size:18px; color:#00ff66;">FINAL SCORE: <span id="final-score">0</span></p>
+            <button class="retry-btn" style="background:#ffff00; color:#000;" onclick="location.reload()">PLAY AGAIN</button>
+        </div>
+    </div>
+    
+    <div id="gameover">
+        <div class="modal-card">
+            <h1 style="color:#ff2244; margin-top:0; font-size:32px; text-shadow:0 0 10px #ff2244;">GAME OVER</h1>
+            <p id="go-reason" style="font-size:16px;">Pac-Man ran out of lives!</p>
+            <button class="retry-btn" style="background:#ff2244; color:#fff;" onclick="location.reload()">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- GAME STATE ---
+        let score = 0, lives = 3, fruitsCollected = 0, powerUp = false, remainingDots = 0, gameActive = true;
+        let powerTimeLeft = 0;
+        let velocityY = 0, isJumping = false;
+        let walkTimer = 0;
+        let currentDistrictIndex = 0;
+        let lastCheckpointPos = new THREE.Vector3(-130, 0, 0);
+
+        const DISTRICT_NAMES = [
+            "1. RESIDENTIAL SUBURBS",
+            "2. DOWNTOWN METROPOLIS",
+            "3. PAC-PARK & LAKES",
+            "4. COMMERCIAL ARCADE STRIP",
+            "5. HIGHWAY OVERPASS",
+            "6. FAIRYLAND CASTLE"
+        ];
+
+        // --- THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x3898ff); // Cheerful daytime blue sky
+        scene.fog = new THREE.FogExp2(0x5caeff, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        const miniCanvas = document.getElementById('minimap');
+        const miniCtx = miniCanvas.getContext('2d');
+        miniCanvas.width = 125; miniCanvas.height = 125;
+
+        // --- AUDIO ENGINE (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(freq, duration = 0.1, type = 'sine', rampEnd = 0.001) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(rampEnd, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playWakaSound() {
+            playSfx(420 + Math.sin(Date.now() * 0.02) * 120, 0.07, 'triangle');
+        }
+
+        function playCheckpointSound() {
+            playSfx(523, 0.15, 'sine');
+            setTimeout(() => playSfx(659, 0.15, 'sine'), 120);
+            setTimeout(() => playSfx(783, 0.25, 'sine'), 240);
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast-msg');
+            toast.innerText = text;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, -50%) scale(1.1)';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -50%) scale(0.9)';
+            }, 2200);
+        }
+
+        // =========================================================================
+        // --- 3D PAC-MAN MODEL (EXACT ORIGINAL FROM ATTACHED CODE) ---
+        // =========================================================================
+        function createDetailedPacman() {
+            const pacmanGroup = new THREE.Group();
+
+            const yellowMat = new THREE.MeshPhongMaterial({ color: 0xffd700, shininess: 80, specular: 0x444411 });
+            const eyeBlackMat = new THREE.MeshPhongMaterial({ color: 0x050505, shininess: 100 });
+            const gloveOrangeMat = new THREE.MeshPhongMaterial({ color: 0xff6600, shininess: 60 });
+            const gloveCuffMat = new THREE.MeshPhongMaterial({ color: 0xff9900, shininess: 40 });
+            const bootRedMat = new THREE.MeshPhongMaterial({ color: 0xdd0011, shininess: 70 });
+            const tongueRedMat = new THREE.MeshPhongMaterial({ color: 0xff1133, shininess: 30 });
+            const mouthInnerMat = new THREE.MeshBasicMaterial({ color: 0x220000, side: THREE.BackSide });
+
+            const headGroup = new THREE.Group();
+
+            // Upper Jaw
+            const topGeo = new THREE.SphereGeometry(0.85, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const topHalf = new THREE.Mesh(topGeo, yellowMat);
+            topHalf.castShadow = true;
+
+            const topInner = new THREE.Mesh(new THREE.SphereGeometry(0.83, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), mouthInnerMat);
+            topHalf.add(topInner);
+
+            // Nose
+            const noseGeo = new THREE.ConeGeometry(0.22, 0.65, 16);
+            noseGeo.rotateX(Math.PI / 2);
+            const nose = new THREE.Mesh(noseGeo, yellowMat);
+            nose.position.set(0, 0.15, 0.82);
+            nose.scale.set(1, 0.85, 1.1);
+            topHalf.add(nose);
+
+            // Pie Eyes
+            function createPieEye() {
+                const eyeGroup = new THREE.Group();
+                const eyeShape = new THREE.Shape();
+                eyeShape.absarc(0, 0, 0.22, 0, Math.PI * 2, false);
+                
+                const extrudeSettings = { depth: 0.05, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
+                const eyeMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(eyeShape, extrudeSettings), eyeBlackMat);
+
+                const wedgeGeo = new THREE.ConeGeometry(0.12, 0.1, 3);
+                const wedge = new THREE.Mesh(wedgeGeo, new THREE.MeshBasicMaterial({ color: 0xffd700 }));
+                wedge.rotation.z = Math.PI / 4;
+                wedge.position.set(-0.08, 0.05, 0.03);
+                eyeGroup.add(eyeMesh);
+                return eyeGroup;
+            }
+
+            const rightEye = createPieEye();
+            rightEye.position.set(0.32, 0.38, 0.65);
+            rightEye.rotation.set(-0.1, 0.35, -0.1);
+
+            const leftEye = createPieEye();
+            leftEye.position.set(-0.32, 0.38, 0.65);
+            leftEye.rotation.set(-0.1, -0.35, 0.1);
+
+            topHalf.add(rightEye);
+            topHalf.add(leftEye);
+
+            // Lower Jaw
+            const bottomGeo = new THREE.SphereGeometry(0.85, 32, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+            const bottomHalf = new THREE.Mesh(bottomGeo, yellowMat);
+            bottomHalf.castShadow = true;
+
+            const bottomInner = new THREE.Mesh(new THREE.SphereGeometry(0.83, 16, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mouthInnerMat);
+            bottomHalf.add(bottomInner);
+
+            // Tongue
+            const tongueGeo = new THREE.SphereGeometry(0.55, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+            const tongue = new THREE.Mesh(tongueGeo, tongueRedMat);
+            tongue.scale.set(1.1, 0.45, 1.2);
+            tongue.position.set(0, -0.22, 0.2);
+            tongue.rotation.x = -0.2;
+            bottomHalf.add(tongue);
+
+            headGroup.add(topHalf);
+            headGroup.add(bottomHalf);
+            headGroup.position.y = 0.85;
+            pacmanGroup.add(headGroup);
+
+            // Arms & Orange Gloves
+            function createArm(isLeft) {
+                const armGroup = new THREE.Group();
+                const sideFactor = isLeft ? -1 : 1;
+
+                const armStem = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.45, 12), yellowMat);
+                armStem.position.set(sideFactor * 0.2, -0.15, 0);
+                armStem.rotation.z = sideFactor * -0.6;
+                armGroup.add(armStem);
+
+                const cuffGeo = new THREE.TorusGeometry(0.16, 0.06, 12, 20);
+                const cuff = new THREE.Mesh(cuffGeo, gloveCuffMat);
+                cuff.position.set(sideFactor * 0.38, -0.32, 0);
+                cuff.rotation.x = Math.PI / 2;
+                armGroup.add(cuff);
+
+                const gloveMain = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), gloveOrangeMat);
+                gloveMain.scale.set(1.2, 1, 1.1);
+                gloveMain.position.set(sideFactor * 0.42, -0.42, 0.05);
+
+                const thumbGeo = new THREE.SphereGeometry(0.1, 12, 12);
+                const thumb = new THREE.Mesh(thumbGeo, gloveOrangeMat);
+                thumb.position.set(sideFactor * -0.12, 0.05, 0.12);
+                gloveMain.add(thumb);
+
+                armGroup.add(gloveMain);
+                armGroup.position.set(sideFactor * 0.75, 0.75, 0);
+                return armGroup;
+            }
+
+            const leftArm = createArm(true);
+            const rightArm = createArm(false);
+            pacmanGroup.add(leftArm);
+            pacmanGroup.add(rightArm);
+
+            // Legs & Red Boots
+            function createLeg(isLeft) {
+                const legGroup = new THREE.Group();
+                const sideFactor = isLeft ? -1 : 1;
+
+                const legStem = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.4, 12), yellowMat);
+                legStem.position.y = -0.2;
+                legGroup.add(legStem);
+
+                const bootCuffGeo = new THREE.TorusGeometry(0.17, 0.05, 12, 20);
+                const bootCuff = new THREE.Mesh(bootCuffGeo, bootRedMat);
+                bootCuff.position.y = -0.35;
+                bootCuff.rotation.x = Math.PI / 2;
+                legGroup.add(bootCuff);
+
+                const bootGroup = new THREE.Group();
+                const bootBody = new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 16), bootRedMat);
+                bootBody.scale.set(1, 0.8, 1.6);
+                bootBody.position.set(0, -0.48, 0.12);
+                bootGroup.add(bootBody);
+
+                const soleGeo = new THREE.BoxGeometry(0.36, 0.08, 0.75);
+                const sole = new THREE.Mesh(soleGeo, bootRedMat);
+                sole.position.set(0, -0.62, 0.12);
+                bootGroup.add(sole);
+
+                const shineGeo = new THREE.SphereGeometry(0.07, 8, 8);
+                const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                const shine = new THREE.Mesh(shineGeo, shineMat);
+                shine.scale.set(0.4, 1.2, 0.8);
+                shine.position.set(sideFactor * 0.18, -0.42, 0.15);
+                bootGroup.add(shine);
+
+                legGroup.add(bootGroup);
+                legGroup.position.set(sideFactor * 0.35, 0.38, 0);
+                return legGroup;
+            }
+
+            const leftLeg = createLeg(true);
+            const rightLeg = createLeg(false);
+            pacmanGroup.add(leftLeg);
+            pacmanGroup.add(rightLeg);
+
+            pacmanGroup.userData = {
+                topHalf,
+                bottomHalf,
+                leftArm,
+                rightArm,
+                leftLeg,
+                rightLeg,
+                headGroup
+            };
+
+            return pacmanGroup;
+        }
+
+        const pacman = createDetailedPacman();
+        pacman.position.copy(lastCheckpointPos);
+        scene.add(pacman);
+
+        // --- ENVIRONMENT LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfff5ea, 1.1);
+        sunLight.position.set(50, 100, 40);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 10;
+        sunLight.shadow.camera.far = 300;
+        const d = 120;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        scene.add(sunLight);
+
+        const pacmanLight = new THREE.PointLight(0xffea00, 2, 12);
+        scene.add(pacmanLight);
+
+        // --- WORLD & BUILDINGS SETUP ---
+        const colliders = [];
+        const dots = [];
+        const fruits = [];
+        const checkpoints = [];
+
+        // Procedural Sky Clouds
+        function createClouds() {
+            const cloudGeo = new THREE.DodecahedronGeometry(6, 1);
+            const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true, opacity: 0.88, transparent: true });
+            for (let i = 0; i < 35; i++) {
+                const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+                cloud.position.set((Math.random() - 0.2) * 450 - 100, 35 + Math.random() * 25, (Math.random() - 0.5) * 180);
+                cloud.scale.set(1 + Math.random() * 2, 0.6 + Math.random() * 0.5, 1 + Math.random() * 1.5);
+                scene.add(cloud);
+            }
+        }
+        createClouds();
+
+        // City Road / Main Street (Spanning X: -150 to +240)
+        const streetGeo = new THREE.PlaneGeometry(420, 22);
+        const streetMat = new THREE.MeshPhongMaterial({ color: 0x222633, shininess: 10 });
+        const street = new THREE.Mesh(streetGeo, streetMat);
+        street.rotation.x = -Math.PI / 2;
+        street.position.set(45, 0, 0);
+        street.receiveShadow = true;
+        scene.add(street);
+
+        // Sidewalks (North and South)
+        const sidewalkGeo = new THREE.BoxGeometry(420, 0.3, 6);
+        const sidewalkMat = new THREE.MeshPhongMaterial({ color: 0x99a3b0, shininess: 20 });
+        
+        const northSidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
+        northSidewalk.position.set(45, 0.15, -12);
+        northSidewalk.receiveShadow = true;
+        scene.add(northSidewalk);
+
+        const southSidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
+        southSidewalk.position.set(45, 0.15, 12);
+        southSidewalk.receiveShadow = true;
+        scene.add(southSidewalk);
+
+        // Road Center Lines
+        for (let x = -150; x < 240; x += 12) {
+            const stripeGeo = new THREE.PlaneGeometry(6, 0.6);
+            const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+            const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+            stripe.rotation.x = -Math.PI / 2;
+            stripe.position.set(x, 0.02, 0);
+            scene.add(stripe);
+        }
+
+        // Helper to register building colliders
+        function addBuilding(mesh) {
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            const box = new THREE.Box3().setFromObject(mesh);
+            colliders.push(box);
+        }
+
+        // --- DISTRICT BUILDER ---
+        
+        // 1. Residential District (X: -150 to -80)
+        function buildResidentialArea() {
+            const grassGeo = new THREE.PlaneGeometry(70, 100);
+            const grassMat = new THREE.MeshPhongMaterial({ color: 0x48b02c });
+            const grassN = new THREE.Mesh(grassGeo, grassMat); grassN.rotation.x = -Math.PI / 2; grassN.position.set(-115, -0.01, -40); scene.add(grassN);
+            const grassS = new THREE.Mesh(grassGeo, grassMat); grassS.rotation.x = -Math.PI / 2; grassS.position.set(-115, -0.01, 40); scene.add(grassS);
+
+            for (let x = -140; x <= -80; x += 22) {
+                // Houses North side
+                const houseGroup = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 12), new THREE.MeshPhongMaterial({ color: (x % 44 === 0) ? 0xff6666 : 0xffcc66 }));
+                body.position.y = 4;
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(10, 5, 4), new THREE.MeshPhongMaterial({ color: 0xaa2222 }));
+                roof.position.y = 10.5; roof.rotation.y = Math.PI / 4;
+                houseGroup.add(body, roof);
+                houseGroup.position.set(x, 0, -22);
+                addBuilding(houseGroup);
+
+                // Trees North
+                createTree(x + 10, -14);
+
+                // Houses South side
+                const houseS = houseGroup.clone();
+                houseS.position.set(x, 0, 22);
+                addBuilding(houseS);
+
+                createTree(x + 10, 14);
+            }
+        }
+
+        // 2. Downtown Metropolis (X: -70 to -10)
+        function buildDowntownArea() {
+            const paveGeo = new THREE.PlaneGeometry(60, 100);
+            const paveMat = new THREE.MeshPhongMaterial({ color: 0x667280 });
+            const paveN = new THREE.Mesh(paveGeo, paveMat); paveN.rotation.x = -Math.PI/2; paveN.position.set(-40, -0.01, -40); scene.add(paveN);
+            const paveS = new THREE.Mesh(paveGeo, paveMat); paveS.rotation.x = -Math.PI/2; paveS.position.set(-40, -0.01, 40); scene.add(paveS);
+
+            const colors = [0x336699, 0x995533, 0x448866, 0x884488, 0x3377aa];
+            let cIdx = 0;
+            for (let x = -65; x <= -15; x += 18) {
+                // High-rise North
+                const height = 20 + Math.random() * 25;
+                const bldg = new THREE.Mesh(new THREE.BoxGeometry(14, height, 16), new THREE.MeshPhongMaterial({ color: colors[cIdx++ % colors.length], shininess: 50 }));
+                bldg.position.set(x, height / 2, -24);
+                addBuilding(bldg);
+
+                // High-rise South
+                const heightS = 18 + Math.random() * 22;
+                const bldgS = new THREE.Mesh(new THREE.BoxGeometry(14, heightS, 16), new THREE.MeshPhongMaterial({ color: colors[cIdx++ % colors.length], shininess: 50 }));
+                bldgS.position.set(x, heightS / 2, 24);
+                addBuilding(bldgS);
+
+                // Streetlamps
+                createStreetLamp(x + 8, -11);
+                createStreetLamp(x + 8, 11);
+            }
+        }
+
+        // 3. Pac-Park Area (X: 0 to 60)
+        function buildParkArea() {
+            const parkGrass = new THREE.Mesh(new THREE.PlaneGeometry(70, 120), new THREE.MeshPhongMaterial({ color: 0x3aa322 }));
+            parkGrass.rotation.x = -Math.PI / 2; parkGrass.position.set(30, -0.01, 0); scene.add(parkGrass);
+
+            // Archway at Park Entrance
+            const archGroup = new THREE.Group();
+            const pillarL = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 8), new THREE.MeshPhongMaterial({ color: 0xeeeeee }));
+            pillarL.position.set(-10, 4, -10);
+            const pillarR = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 8), new THREE.MeshPhongMaterial({ color: 0xeeeeee }));
+            pillarR.position.set(-10, 4, 10);
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 22), new THREE.MeshPhongMaterial({ color: 0xffcc00 }));
+            topBar.position.set(-10, 8, 0);
+            archGroup.add(pillarL, pillarR, topBar);
+            scene.add(archGroup);
+
+            // Trees and Benches scattered
+            for (let px = 5; px <= 55; px += 12) {
+                createTree(px, -20 - (px % 5));
+                createTree(px, 20 + (px % 7));
+                if (px % 24 === 0) {
+                    createBench(px, -14);
+                    createBench(px, 14);
+                }
+            }
+
+            // Pond in Park North
+            const pond = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 0.2, 24), new THREE.MeshPhongMaterial({ color: 0x0088cc, shininess: 100, transparent: true, opacity: 0.8 }));
+            pond.position.set(30, 0.05, -30);
+            scene.add(pond);
+        }
+
+        // 4. Commercial Arcade Strip (X: 70 to 120)
+        function buildArcadeStrip() {
+            for (let x = 75; x <= 115; x += 20) {
+                // Shop North
+                const shop = new THREE.Mesh(new THREE.BoxGeometry(16, 10, 14), new THREE.MeshPhongMaterial({ color: 0xffaa00 }));
+                shop.position.set(x, 5, -22);
+                addBuilding(shop);
+
+                // Neon Sign Board
+                const sign = new THREE.Mesh(new THREE.BoxGeometry(12, 3, 1), new THREE.MeshBasicMaterial({ color: (x % 40 === 0) ? 0xff00ff : 0x00ffff }));
+                sign.position.set(x, 11, -14.5);
+                scene.add(sign);
+
+                // Shop South
+                const shopS = new THREE.Mesh(new THREE.BoxGeometry(16, 10, 14), new THREE.MeshPhongMaterial({ color: 0x00ccaa }));
+                shopS.position.set(x, 5, 22);
+                addBuilding(shopS);
+
+                createStreetLamp(x, -11);
+                createStreetLamp(x, 11);
+            }
+        }
+
+        // 5. Highway Overpass & Bridge (X: 130 to 180)
+        function buildHighwayArea() {
+            // Water under the bridge
+            const river = new THREE.Mesh(new THREE.PlaneGeometry(60, 150), new THREE.MeshPhongMaterial({ color: 0x115599, shininess: 90 }));
+            river.rotation.x = -Math.PI / 2;
+            river.position.set(155, -2, 0);
+            scene.add(river);
+
+            // Bridge Railings North and South
+            const railGeo = new THREE.BoxGeometry(50, 2.5, 0.8);
+            const railMat = new THREE.MeshPhongMaterial({ color: 0xdddddd });
+            
+            const railN = new THREE.Mesh(railGeo, railMat); railN.position.set(155, 1.2, -10); addBuilding(railN);
+            const railS = new THREE.Mesh(railGeo, railMat); railS.position.set(155, 1.2, 10); addBuilding(railS);
+        }
+
+        // 6. Fairyland Castle & Goal (X: 190 to 230)
+        function buildCastleArea() {
+            const castleGroup = new THREE.Group();
+
+            const wallMat = new THREE.MeshPhongMaterial({ color: 0xeeeeee, shininess: 30 });
+            const roofMat = new THREE.MeshPhongMaterial({ color: 0xaa00cc });
+
+            // Main Keep
+            const main = new THREE.Mesh(new THREE.BoxGeometry(22, 24, 22), wallMat);
+            main.position.set(220, 12, 0);
+
+            // Towers
+            const t1 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 30, 16), wallMat); t1.position.set(208, 15, -12);
+            const r1 = new THREE.Mesh(new THREE.ConeGeometry(5, 8, 16), roofMat); r1.position.set(208, 34, -12);
+            
+            const t2 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 30, 16), wallMat); t2.position.set(208, 15, 12);
+            const r2 = new THREE.Mesh(new THREE.ConeGeometry(5, 8, 16), roofMat); r2.position.set(208, 34, 12);
+
+            castleGroup.add(main, t1, r1, t2, r2);
+            addBuilding(castleGroup);
+
+            // FINISH LINE PORTAL
+            const portalGeo = new THREE.TorusGeometry(5, 0.6, 16, 32);
+            const portalMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            const portal = new THREE.Mesh(portalGeo, portalMat);
+            portal.position.set(198, 5, 0);
+            portal.rotation.y = Math.PI / 2;
+            scene.add(portal);
+        }
+
+        // Helper Props Builders
+        function createTree(x, z) {
+            const treeGroup = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 3.5, 8), new THREE.MeshPhongMaterial({ color: 0x664422 }));
+            trunk.position.y = 1.75;
+            const foliage = new THREE.Mesh(new THREE.DodecahedronGeometry(2.2, 1), new THREE.MeshPhongMaterial({ color: 0x22aa33, flatShading: true }));
+            foliage.position.y = 4.2;
+            treeGroup.add(trunk, foliage);
+            treeGroup.position.set(x, 0, z);
+            treeGroup.castShadow = true;
+            scene.add(treeGroup);
+
+            const box = new THREE.Box3().setFromObject(treeGroup);
+            colliders.push(box);
+        }
+
+        function createStreetLamp(x, z) {
+            const lampGroup = new THREE.Group();
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 7, 8), new THREE.MeshPhongMaterial({ color: 0x333333 }));
+            pole.position.y = 3.5;
+            const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffffaa }));
+            bulb.position.y = 7;
+            lampGroup.add(pole, bulb);
+            lampGroup.position.set(x, 0, z);
+            scene.add(lampGroup);
+        }
+
+        function createBench(x, z) {
+            const bench = new THREE.Mesh(new THREE.BoxGeometry(3, 1, 1.2), new THREE.MeshPhongMaterial({ color: 0x885522 }));
+            bench.position.set(x, 0.5, z);
+            addBuilding(bench);
+        }
+
+        // Initialize Districts
+        buildResidentialArea();
+        buildDowntownArea();
+        buildParkArea();
+        buildArcadeStrip();
+        buildHighwayArea();
+        buildCastleArea();
+
+        // --- COLLECTIBLES (Dots, Power Pellets, Fruits, Checkpoints) ---
+        function spawnItems() {
+            // Dots along north and south sidewalks
+            for (let x = -145; x <= 190; x += 4.5) {
+                createDot(x, -12);
+                createDot(x, 12);
+            }
+
+            // Power Pellets at District Key points
+            createPowerPellet(-110, -12);
+            createPowerPellet(-30, 12);
+            createPowerPellet(40, -12);
+            createPowerPellet(105, 12);
+
+            // Fruits at Landmark Locations
+            createFruit(-90, 0, 0);  // Cherry
+            createFruit(-20, 0, 0);  // Strawberry
+            createFruit(30, 0, 0);   // Orange
+            createFruit(95, 0, 0);   // Apple
+            createFruit(155, 0, 0);  // Melon
+
+            // Checkpoints
+            createCheckpoint(-70, 0, 1);
+            createCheckpoint(0, 0, 2);
+            createCheckpoint(70, 0, 3);
+            createCheckpoint(130, 0, 4);
+            createCheckpoint(185, 0, 5);
+        }
+
+        function createDot(x, z) {
+            const dotGeo = new THREE.SphereGeometry(0.22, 12, 12);
+            const dotMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const dot = new THREE.Mesh(dotGeo, dotMat);
+            dot.position.set(x, 0.8, z);
+            scene.add(dot);
+            dots.push(dot);
+            remainingDots++;
+        }
+
+        function createPowerPellet(x, z) {
+            const pelletGeo = new THREE.SphereGeometry(0.55, 16, 16);
+            const pelletMat = new THREE.MeshPhongMaterial({ color: 0xffff00, emissive: 0x888800 });
+            const pellet = new THREE.Mesh(pelletGeo, pelletMat);
+            pellet.position.set(x, 0.9, z);
+            pellet.isPower = true;
+            scene.add(pellet);
+            dots.push(pellet);
+            remainingDots++;
+        }
+
+        function createFruit(x, z, type) {
+            const fruitGroup = new THREE.Group();
+            const colors = [0xff0033, 0xff3366, 0xff9900, 0x00cc33, 0x3366ff];
+            const fruitGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            const fruitMat = new THREE.MeshPhongMaterial({ color: colors[type % colors.length], shininess: 80 });
+            const body = new THREE.Mesh(fruitGeo, fruitMat);
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.4), new THREE.MeshBasicMaterial({ color: 0x44aa00 }));
+            stem.position.y = 0.5;
+            fruitGroup.add(body, stem);
+            fruitGroup.position.set(x, 1.0, z);
+            fruitGroup.type = type;
+            scene.add(fruitGroup);
+            fruits.push(fruitGroup);
+        }
+
+        function createCheckpoint(x, z, districtIdx) {
+            const pad = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 0.1, 24), new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.6 }));
+            pad.position.set(x, 0.05, z);
+            pad.districtIndex = districtIdx;
+            scene.add(pad);
+            checkpoints.push(pad);
+        }
+
+        spawnItems();
+        document.getElementById('remaining').innerText = remainingDots;
+
+        // --- GHOSTS (Blinky, Pinky, Inky, Clyde) ---
+        function createGhost(color, name) {
+            const group = new THREE.Group();
+            
+            const bodyGeo = new THREE.CapsuleGeometry(0.55, 0.6, 16, 16);
+            const bodyMat = new THREE.MeshPhongMaterial({ color, shininess: 50, transparent: true, opacity: 0.95 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.65;
+            body.castShadow = true;
+            group.add(body);
+
+            // Eyes
+            const eyeGeo = new THREE.SphereGeometry(0.14, 12, 12);
+            const pupilGeo = new THREE.SphereGeometry(0.07, 12, 12);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const pupilMat = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+
+            const lE = new THREE.Mesh(eyeGeo, eyeMat); lE.position.set(0.22, 0.85, 0.42);
+            const lP = new THREE.Mesh(pupilGeo, pupilMat); lP.position.set(0.22, 0.85, 0.52);
+            const rE = new THREE.Mesh(eyeGeo, eyeMat); rE.position.set(-0.22, 0.85, 0.42);
+            const rP = new THREE.Mesh(pupilGeo, pupilMat); rP.position.set(-0.22, 0.85, 0.52);
+
+            group.add(lE, lP, rE, rP);
+            group.baseColor = color; 
+            group.ghostName = name;
+            group.isDead = false;
+            group.respawnPos = new THREE.Vector3();
+            return group;
+        }
+
+        const ghostData = [
+            { color: 0xff0000, name: 'Blinky', startX: -100, startZ: -5 },
+            { color: 0xffb8ff, name: 'Pinky', startX: -40, startZ: 5 },
+            { color: 0x00ffff, name: 'Inky', startX: 20, startZ: -5 },
+            { color: 0xffb852, name: 'Clyde', startX: 80, startZ: 5 }
+        ];
+
+        const ghosts = ghostData.map(d => {
+            const g = createGhost(d.color, d.name);
+            g.position.set(d.startX, 0.3, d.startZ);
+            g.respawnPos.set(d.startX, 0.3, d.startZ);
+            scene.add(g);
+            return g;
+        });
+
+        function killGhost(g) {
+            g.isDead = true; 
+            g.position.copy(g.respawnPos);
+            g.children[0].material.color.set(0x333333);
+            score += 200; 
+            document.getElementById('score').innerText = score.toString().padStart(6, '0');
+            playSfx(700, 0.25, 'square');
+            setTimeout(() => { 
+                g.isDead = false; 
+                g.children[0].material.color.set(powerUp ? 0x0002ff : g.baseColor);
+            }, 6000);
+        }
+
+        // --- CONTROLS & CAMERA ---
+        let moveF = 0, moveS = 0;
+        let camAngleY = Math.PI / 2; 
+        let camAngleX = 0.35;     
+        let camRadius = 11.0;       
+
+        function triggerJump() {
+            if (!isJumping && gameActive) { 
+                velocityY = 0.24; 
+                isJumping = true; 
+                playSfx(320, 0.18, 'triangle'); 
+            }
+        }
+
+        document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); triggerJump(); });
+        document.getElementById('btnJump').addEventListener('click', () => triggerJump());
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.code === 'Space') { triggerJump(); e.preventDefault(); }
+        });
+        window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+        let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
+
+        window.addEventListener('touchstart', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX > window.innerWidth / 2 && !e.target.closest('.btn')) {
+                    isDraggingCamera = true;
+                    touchStartX = t.clientX;
+                    touchStartY = t.clientY;
+                }
+            }
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX < window.innerWidth / 2) {
+                    const r = document.getElementById('joystick-container').getBoundingClientRect();
+                    let dx = t.clientX - (r.left + 55), dy = t.clientY - (r.top + 55);
+                    const d = Math.sqrt(dx*dx + dy*dy) || 1;
+                    moveS = (dx / d) * 0.18; 
+                    moveF = (dy / d) * 0.18;
+                    document.getElementById('joystick-knob').style.transform = `translate(${(dx/d)*Math.min(d,45)/2}px, ${(dy/d)*Math.min(d,45)/2}px)`;
+                } else if (isDraggingCamera) {
+                    let deltaX = t.clientX - touchStartX;
+                    let deltaY = t.clientY - touchStartY;
+                    camAngleY -= deltaX * 0.008;
+                    camAngleX -= deltaY * 0.008;
+                    camAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.15, camAngleX));
+                    touchStartX = t.clientX;
+                    touchStartY = t.clientY;
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => { 
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX < window.innerWidth / 2) {
+                    moveF = moveS = 0; 
+                    document.getElementById('joystick-knob').style.transform = 'translate(0,0)'; 
+                } else {
+                    isDraggingCamera = false;
+                }
+            }
+        });
+
+        // Mouse Drag Camera on PC
+        let isMouseDown = false, mouseX = 0, mouseY = 0;
+        window.addEventListener('mousedown', (e) => {
+            if (e.clientX > 150) { isMouseDown = true; mouseX = e.clientX; mouseY = e.clientY; }
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (isMouseDown) {
+                camAngleY -= (e.clientX - mouseX) * 0.006;
+                camAngleX -= (e.clientY - mouseY) * 0.006;
+                camAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.15, camAngleX));
+                mouseX = e.clientX; mouseY = e.clientY;
+            }
+        });
+        window.addEventListener('mouseup', () => isMouseDown = false);
+
+        // Check Building Collisions
+        function checkCol(p) { 
+            const playerBox = new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(1.4, 1.4, 1.4));
+            return colliders.some(w => playerBox.intersectsBox(w)); 
+        }
+
+        function gameOver(reason) {
+            gameActive = false;
+            document.getElementById('gameover').style.display = 'flex';
+            document.getElementById('go-reason').innerText = reason;
+            playSfx(140, 0.8, 'sawtooth');
+        }
+
+        function triggerVictory() {
+            gameActive = false;
+            document.getElementById('victory').style.display = 'flex';
+            document.getElementById('final-score').innerText = score;
+            playSfx(523, 0.2, 'sine');
+            setTimeout(() => playSfx(659, 0.2, 'sine'), 180);
+            setTimeout(() => playSfx(783, 0.2, 'sine'), 360);
+            setTimeout(() => playSfx(1046, 0.5, 'triangle'), 540);
+        }
+
+        // --- MAIN GAME LOOP ---
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+
+            // Keyboard input W A S D
+            let kF = 0, kS = 0;
+            if (keys['w'] || keys['arrowup']) kF = -0.18;
+            if (keys['s'] || keys['arrowdown']) kF = 0.18;
+            if (keys['a'] || keys['arrowleft']) kS = -0.18;
+            if (keys['d'] || keys['arrowright']) kS = 0.18;
+
+            const effectiveMoveF = moveF !== 0 ? moveF : kF;
+            const effectiveMoveS = moveS !== 0 ? moveS : kS;
+            const isMoving = (effectiveMoveF !== 0 || effectiveMoveS !== 0);
+
+            // Gravity & Jumping
+            if (isJumping) {
+                pacman.position.y += velocityY; 
+                velocityY -= 0.013;
+                if (pacman.position.y <= 0.0) { 
+                    pacman.position.y = 0.0; 
+                    isJumping = false; 
+                }
+            }
+
+            // Direction vector relative to camera
+            const moveVec = new THREE.Vector3(effectiveMoveS, 0, effectiveMoveF).applyAxisAngle(new THREE.Vector3(0, 1, 0), camAngleY);
+
+            if (isMoving) {
+                const npX = pacman.position.clone(); npX.x += moveVec.x; if (!checkCol(npX)) pacman.position.x = npX.x;
+                const npZ = pacman.position.clone(); npZ.z += moveVec.z; if (!checkCol(npZ)) pacman.position.z = npZ.z;
+                
+                // Turn Pac-Man towards walking direction
+                const targetAngle = Math.atan2(moveVec.x, moveVec.z);
+                pacman.rotation.y = targetAngle;
+
+                // Walk / Mouth Bite Animations
+                walkTimer += 0.25;
+                if (Math.sin(walkTimer * 1.5) > 0.8) playWakaSound();
+
+                const mouthAngle = (Math.sin(walkTimer * 1.5) + 1) * 0.28;
+                pacman.userData.topHalf.rotation.x = -mouthAngle;
+                pacman.userData.bottomHalf.rotation.x = mouthAngle;
+
+                const limbSwing = Math.sin(walkTimer) * 0.6;
+                pacman.userData.leftLeg.rotation.x = limbSwing;
+                pacman.userData.rightLeg.rotation.x = -limbSwing;
+                pacman.userData.leftArm.rotation.x = -limbSwing * 0.8;
+                pacman.userData.rightArm.rotation.x = limbSwing * 0.8;
+            } else {
+                // Resting pose
+                pacman.userData.topHalf.rotation.x = -0.05;
+                pacman.userData.bottomHalf.rotation.x = 0.05;
+                pacman.userData.leftLeg.rotation.x = 0;
+                pacman.userData.rightLeg.rotation.x = 0;
+                pacman.userData.leftArm.rotation.x = 0;
+                pacman.userData.rightArm.rotation.x = 0;
+            }
+
+            if (isJumping) {
+                pacman.userData.leftArm.rotation.z = -0.8;
+                pacman.userData.rightArm.rotation.z = 0.8;
+                pacman.userData.leftLeg.rotation.x = -0.4;
+                pacman.userData.rightLeg.rotation.x = 0.4;
+            }
+
+            // Orbit Camera following Pac-Man smoothly
+            const targetCamX = pacman.position.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
+            const targetCamY = pacman.position.y + 1.2 + camRadius * Math.sin(camAngleX);
+            const targetCamZ = pacman.position.z + camRadius * Math.cos(camAngleY) * Math.cos(camAngleX);
+
+            camera.position.x += (targetCamX - camera.position.x) * 0.1;
+            camera.position.y += (targetCamY - camera.position.y) * 0.1;
+            camera.position.z += (targetCamZ - camera.position.z) * 0.1;
+            camera.lookAt(pacman.position.x, pacman.position.y + 0.8, pacman.position.z);
+            
+            pacmanLight.position.set(pacman.position.x, pacman.position.y + 2.5, pacman.position.z);
+
+            // Power Pellet Timer Management
+            if (powerUp) {
+                powerTimeLeft -= 16;
+                document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
+                if (powerTimeLeft <= 0) { 
+                    powerUp = false; 
+                    document.getElementById('powerBarContainer').style.display = 'none'; 
+                    ghosts.forEach(g => { if (!g.isDead) g.children[0].material.color.set(g.baseColor); }); 
+                }
+            }
+
+            // Ghost Movement & AI
+            ghosts.forEach(g => {
+                if (g.isDead) return;
+                const gSpeed = powerUp ? -0.025 : 0.038;
+                
+                // Track towards Pac-Man
+                let dx = (pacman.position.x - g.position.x) * gSpeed;
+                let dz = (pacman.position.z - g.position.z) * gSpeed;
+                
+                const ngX = g.position.clone(); ngX.x += dx; if (!checkCol(ngX)) g.position.x = ngX.x;
+                const ngZ = g.position.clone(); ngZ.z += dz; if (!checkCol(ngZ)) g.position.z = ngZ.z;
+                g.lookAt(pacman.position.x, 0.3, pacman.position.z);
+
+                // Touch / Collision with Pac-Man
+                if (pacman.position.distanceTo(g.position) < 1.4) {
+                    if (powerUp) {
+                        killGhost(g);
+                    } else if (!isJumping) {
+                        lives--; 
+                        document.getElementById('lives').innerText = lives;
+                        playSfx(160, 0.4, 'sawtooth');
+                        pacman.position.copy(lastCheckpointPos); 
+                        if (lives <= 0) gameOver("Pac-Man was caught by ghosts!");
+                    }
+                }
+            });
+
+            // Collectibles Interaction
+            dots.forEach(d => {
+                if (d.visible && pacman.position.clone().add(new THREE.Vector3(0,0.8,0)).distanceTo(d.position) < 1.3) {
+                    d.visible = false; 
+                    score += d.isPower ? 50 : 10; 
+                    remainingDots--;
+                    document.getElementById('score').innerText = score.toString().padStart(6, '0');
+                    document.getElementById('remaining').innerText = remainingDots;
+
+                    if (d.isPower) { 
+                        powerUp = true; 
+                        powerTimeLeft = 8000; 
+                        document.getElementById('powerBarContainer').style.display = 'block'; 
+                        ghosts.forEach(g => { if (!g.isDead) g.children[0].material.color.set(0x0002ff); }); 
+                        playSfx(600, 0.25, 'square');
+                    }
+                }
+            });
+
+            // Fruits Interaction
+            fruits.forEach(f => {
+                if (f.visible && pacman.position.distanceTo(f.position) < 1.5) {
+                    f.visible = false;
+                    score += 300;
+                    fruitsCollected++;
+                    document.getElementById('score').innerText = score.toString().padStart(6, '0');
+                    document.getElementById('fruits').innerText = fruitsCollected;
+                    playSfx(880, 0.2, 'sine');
+                }
+            });
+
+            // Checkpoints Interaction
+            checkpoints.forEach(cp => {
+                if (pacman.position.distanceTo(cp.position) < 2.5 && currentDistrictIndex < cp.districtIndex) {
+                    currentDistrictIndex = cp.districtIndex;
+                    lastCheckpointPos.copy(cp.position);
+                    document.getElementById('district-banner').innerText = `📍 AREA: ${DISTRICT_NAMES[currentDistrictIndex]}`;
+                    playCheckpointSound();
+                    showToast(`CHECKPOINT REACHED! ${DISTRICT_NAMES[currentDistrictIndex]}`);
+                }
+            });
+
+            // Check Victory (Reaching Castle Finish Line Portal at X > 195)
+            if (pacman.position.x >= 196) {
+                triggerVictory();
+            }
+
+            // --- MINIMAP RENDER ---
+            miniCtx.fillStyle = '#0a1428'; 
+            miniCtx.fillRect(0, 0, 125, 125);
+            
+            const mapScale = 0.32, offX = 50, offZ = 62;
+            
+            // Draw pacman
+            miniCtx.fillStyle = '#ffd700'; 
+            miniCtx.fillRect(pacman.position.x * mapScale + offX, pacman.position.z * mapScale + offZ, 4, 4);
+            
+            // Draw ghosts
+            ghosts.forEach(g => { 
+                if (!g.isDead) { 
+                    miniCtx.fillStyle = powerUp ? '#00ffff' : '#ff0044'; 
+                    miniCtx.fillRect(g.position.x * mapScale + offX, g.position.z * mapScale + offZ, 3, 3); 
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
+
